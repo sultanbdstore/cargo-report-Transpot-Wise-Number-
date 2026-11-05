@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Export Program Report Maker</title>
+<meta name="description" content="Enter the day's program, get the summary image">
+<meta name="theme-color" content="#150d2b">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/logo-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--bg:#f4f2fb;--card:#fff;--ink:#1b1233;--mute:#675f80;--line:#ddd8ee;--deep:#150d2b;--teal:#12b98c;--blue:#2f6df6;--bad:#c62f4b;--ok:#0c8a68}
+@media (prefers-color-scheme:dark){:root{--bg:#0f0920;--card:#1a1233;--ink:#f1eefc;--mute:#a69fc4;--line:#2f2551;--ok:#33d6a6;--bad:#ff7a93}}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--deep);color:#fff;padding:20px 16px}
+.wrap{max-width:860px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:14px}
+.brand img{width:64px;height:64px}
+h1{font-size:1.4rem;margin:0;line-height:1.2}
+header p{margin:2px 0 0;color:#c9c0ea}
+main{max-width:860px;margin:0 auto;padding:16px 16px calc(40px + env(safe-area-inset-bottom,0))}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+h2{font-size:1.05rem;margin:0 0 8px}
+.hint{color:var(--mute);font-size:.9rem;margin:0 0 10px}
+label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:4px}
+input,textarea{width:100%;font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+textarea{min-height:130px;resize:vertical}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;color:#fff;background:linear-gradient(90deg,var(--teal),var(--blue))}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.table{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:480px}
+th,td{padding:4px;text-align:left}
+th{font-size:.85rem;color:var(--mute);font-weight:500}
+td button{padding:8px 10px}
+.check{padding:10px 12px;border-radius:8px;border:1px solid var(--line);margin-top:4px}
+.check.ok{color:var(--ok)}.check.bad{color:var(--bad)}
+canvas{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);margin-top:12px;display:block}
+</style>
+</head>
+<body>
+<header><div class="wrap brand">
+  <img src="icons/logo-192.png" alt="Logo" width="64" height="64">
+  <div><h1>Export Program Report Maker</h1><p>Enter the day’s program, get the summary image</p></div>
+</div></header>
+<main>
+<section>
+  <h2>Paste WhatsApp text (optional)</h2>
+  <p class="hint">Fills the form automatically and checks it against the totals in your messages. You can still edit anything.</p>
+  <textarea id="paste" placeholder="Exporter: ABC Traders&#10;Location: Chattogram&#10;Date: 05/11/2026&#10;Buyer: XYZ Ltd&#10;Depot: Depot 1&#10;TRK-101 - Rice - 25&#10;TRK-102 - Rice - 30&#10;Total: 55"></textarea>
+  <div class="row"><button id="fill">Fill the form</button><button class="ghost" id="clear">Clear all</button></div>
+</section>
+
+<section>
+  <h2>Data check</h2>
+  <div id="check" class="check">Nothing to check yet.</div>
+</section>
+
+<section>
+  <h2>Basic details</h2>
+  <div class="grid">
+    <div><label for="exporter">Exporter</label><input id="exporter"></div>
+    <div><label for="location">Location</label><input id="location"></div>
+    <div><label for="date">Program date</label><input id="date" type="date"></div>
+    <div><label for="buyer">Buyer</label><input id="buyer"></div>
+    <div><label for="depot">Depot</label><input id="depot"></div>
+  </div>
+</section>
+
+<section>
+  <h2>Program lines</h2>
+  <div class="table"><table>
+    <thead><tr><th>Vehicle</th><th>Item</th><th>Quantity</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+  <div class="row"><button class="ghost" id="add">Add line</button></div>
+</section>
+
+<section>
+  <h2>Summary image</h2>
+  <div class="row" style="margin-top:0"><button id="make">Make image</button><button class="ghost" id="dl">Download PNG</button></div>
+  <canvas id="cv" width="1080" height="1080" aria-label="Summary image preview"></canvas>
+</section>
+
+<section>
+  <h2>WhatsApp text version</h2>
+  <textarea id="out" readonly></textarea>
+  <div class="row"><button id="copy">Copy text</button></div>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const F = ["exporter","location","date","buyer","depot"];
+let declaredTotal = null;
+const logo = new Image(); logo.src = "icons/logo-192.png";
+
+function addRow(v="",i="",q=""){
+  const tr = document.createElement("tr");
+  tr.innerHTML = '<td><input aria-label="Vehicle"></td><td><input aria-label="Item"></td><td><input aria-label="Quantity" inputmode="decimal"></td><td><button class="ghost" aria-label="Remove line">Remove</button></td>';
+  const [a,b,c] = tr.querySelectorAll("input"); a.value=v; b.value=i; c.value=q;
+  tr.querySelector("button").onclick = () => { tr.remove(); refresh(); };
+  tr.addEventListener("input", refresh);
+  $("rows").appendChild(tr);
+}
+const rows = () => [...$("rows").children].map(tr => { const [v,i,q] = [...tr.querySelectorAll("input")].map(x=>x.value.trim()); return {v,i,q,n:parseFloat(q.replace(/,/g,""))}; }).filter(r => r.v||r.i||r.q);
+const num = n => Number.isInteger(n) ? String(n) : String(+n.toFixed(2));
+
+function normDate(s){
+  let m = s.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
+  if(!m) return "";
+  let [,d,mo,y] = m; if(y.length==2) y = "20"+y;
+  return `${y}-${mo.padStart(2,"0")}-${d.padStart(2,"0")}`;
+}
+
+function parse(){
+  const text = $("paste").value; declaredTotal = null; $("rows").innerHTML = "";
+  const keys = {exporter:/^(exporter)\s*[:\-]\s*(.+)$/i, location:/^(location|port|place)\s*[:\-]\s*(.+)$/i, date:/^(program date|date)\s*[:\-]\s*(.+)$/i, buyer:/^(buyer)\s*[:\-]\s*(.+)$/i, depot:/^(depot)\s*[:\-]\s*(.+)$/i};
+  for(const raw of text.split(/\r?\n/)){
+    const line = raw.replace(/^\[[^\]]*\]\s*[^:]*:\s*(?=\w+\s*[:\-])/,"").replace(/[*_]/g,"").trim();
+    if(!line) continue;
+    let hit = false;
+    for(const k in keys){ const m = line.match(keys[k]); if(m){ $(k).value = k==="date" ? (normDate(m[2])||$(k).value) : m[2].trim(); hit = true; break; } }
+    if(hit) continue;
+    const t = line.match(/^(grand\s+)?total\s*[:\-=]?\s*([\d,.]+)/i);
+    if(t){ declaredTotal = parseFloat(t[2].replace(/,/g,"")); continue; }
+    const p = line.split(/\s+[-–|]\s+|\s*\|\s*|\t/).map(s=>s.trim()).filter(Boolean);
+    if(p.length>=3) addRow(p[0],p[1],p[p.length-1].replace(/[^\d.,]/g,""));
+    else if(p.length===2 && /\d/.test(p[1])) addRow("",p[0],p[1].replace(/[^\d.,]/g,""));
+  }
+  if(!$("rows").children.length) addRow();
+  refresh();
+}
+
+function refresh(){
+  const r = rows(), sum = r.reduce((s,x)=>s+(isNaN(x.n)?0:x.n),0);
+  const c = $("check"), problems = [];
+  if(!r.length){ c.className="check"; c.textContent="Nothing to check yet."; }
+  else {
+    r.forEach((x,k)=>{ if(isNaN(x.n)) problems.push(`Line ${k+1}: quantity is missing or not a number.`); });
+    F.forEach(f=>{ if(!$(f).value.trim()) problems.push(`${$(f).previousElementSibling.textContent} is empty.`); });
+    if(declaredTotal!==null && Math.abs(declaredTotal-sum)>0.001) problems.push(`Lines add up to ${num(sum)}, but your message says ${num(declaredTotal)}.`);
+    if(problems.length){ c.className="check bad"; c.innerHTML = problems.map(p=>"• "+p).join("<br>"); }
+    else { c.className="check ok"; c.textContent = declaredTotal!==null ? `All good. ${r.length} lines add up to ${num(sum)}, matching your message.` : `${r.length} lines, total ${num(sum)}.`; }
+  }
+  $("out").value = textVersion(r,sum);
+}
+
+const fmtDate = s => s ? new Date(s+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : "";
+function textVersion(r,sum){
+  const L = ["*Export Program*", `Exporter: ${$("exporter").value}`, `Location: ${$("location").value}`, `Date: ${fmtDate($("date").value)}`, `Buyer: ${$("buyer").value}`, `Depot: ${$("depot").value}`, ""];
+  r.forEach((x,k)=>L.push(`${k+1}. ${x.v} - ${x.i} - ${x.q}`));
+  L.push("", `*Total: ${num(sum)}*`);
+  return L.join("\n");
+}
+
+function draw(){
+  const cv = $("cv"), g = cv.getContext("2d"), W = 1080, r = rows(), sum = r.reduce((s,x)=>s+(isNaN(x.n)?0:x.n),0);
+  const maxRows = 12, shown = r.slice(0,maxRows);
+  const H = Math.max(1080, 520 + shown.length*64 + 200); cv.height = H;
+  const bg = g.createLinearGradient(0,0,W,H); bg.addColorStop(0,"#150d2b"); bg.addColorStop(1,"#2a1458");
+  g.fillStyle = bg; g.fillRect(0,0,W,H);
+  g.drawImage(logo,48,40,120,120);
+  g.fillStyle="#fff"; g.font="700 46px system-ui,sans-serif"; g.fillText("Export Program",190,92);
+  g.fillStyle="#9fe8d0"; g.font="500 30px system-ui,sans-serif"; g.fillText(fmtDate($("date").value),190,138);
+  const info = [["Exporter",$("exporter").value],["Location",$("location").value],["Buyer",$("buyer").value],["Depot",$("depot").value]];
+  info.forEach((p,k)=>{ const x = 48 + (k%2)*500, y = 230 + Math.floor(k/2)*90;
+    g.fillStyle="#b5a9de"; g.font="500 24px system-ui,sans-serif"; g.fillText(p[0],x,y);
+    g.fillStyle="#fff"; g.font="600 32px system-ui,sans-serif"; g.fillText(clip(g,p[1],440),x,y+40); });
+  let y = 440;
+  g.fillStyle="rgba(255,255,255,.08)"; g.fillRect(48,y-40,984,56);
+  g.fillStyle="#b5a9de"; g.font="600 24px system-ui,sans-serif"; g.fillText("Vehicle",64,y); g.fillText("Item",360,y); g.textAlign="right"; g.fillText("Quantity",1016,y); g.textAlign="left";
+  shown.forEach((x,k)=>{ y += 64; g.fillStyle = k%2 ? "rgba(255,255,255,.04)" : "rgba(255,255,255,0)"; g.fillRect(48,y-40,984,64);
+    g.fillStyle="#fff"; g.font="500 28px system-ui,sans-serif"; g.fillText(clip(g,x.v,280),64,y); g.fillText(clip(g,x.i,420),360,y); g.textAlign="right"; g.fillText(x.q,1016,y); g.textAlign="left"; });
+  if(r.length>maxRows){ y+=56; g.fillStyle="#b5a9de"; g.font="500 24px system-ui,sans-serif"; g.fillText(`+ ${r.length-maxRows} more lines`,64,y); }
+  y += 90;
+  const bar = g.createLinearGradient(48,0,1032,0); bar.addColorStop(0,"#12b98c"); bar.addColorStop(1,"#2f6df6");
+  g.fillStyle=bar; g.fillRect(48,y-48,984,84);
+  g.fillStyle="#fff"; g.font="700 38px system-ui,sans-serif"; g.fillText("Total",72,y+8); g.textAlign="right"; g.fillText(num(sum),1008,y+8); g.textAlign="left";
+}
+function clip(g,s,w){ s = s||""; while(g.measureText(s).width>w && s.length>1) s = s.slice(0,-2)+"…"; return s; }
+
+$("fill").onclick = parse;
+$("clear").onclick = () => { $("paste").value=""; F.forEach(f=>$(f).value=""); $("rows").innerHTML=""; declaredTotal=null; addRow(); refresh(); };
+$("add").onclick = () => addRow();
+F.forEach(f => $(f).addEventListener("input", refresh));
+$("make").onclick = draw;
+$("dl").onclick = () => { draw(); const a = document.createElement("a"); a.download = `export-program-${$("date").value||"summary"}.png`; a.href = $("cv").toDataURL("image/png"); a.click(); };
+$("copy").onclick = async e => { try{ await navigator.clipboard.writeText($("out").value); e.target.textContent="Copied"; }catch{ $("out").select(); e.target.textContent="Press Ctrl+C to copy"; } setTimeout(()=>e.target.textContent="Copy text",1800); };
+
+addRow(); refresh();
+logo.onload = draw;
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
