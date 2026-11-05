@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transporter Cargo Report Maker</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#EEF1F6;--card:#fff;--ink:#16202E;--mut:#6B778A;--line:#DDE3EC;--inp:#F6F8FB;--acc:#F6A21E;--navy:#0E2742;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B1624;--card:#13243A;--ink:#E8EEF7;--mut:#93A4BB;--line:#25384F;--inp:#0E1C2E;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B1624;--card:#13243A;--ink:#E8EEF7;--mut:#93A4BB;--line:#25384F;--inp:#0E1C2E;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.top{background:var(--navy);color:#fff;padding:16px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border-bottom:4px solid var(--acc)}
+.top h1{margin:0;font-size:20px;font-weight:800}.top small{display:block;color:#B9C7DA;font-weight:500}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:9px 14px;cursor:pointer;background:var(--acc);color:var(--navy)}
+button.sec{background:transparent;color:inherit;border:1.5px solid currentColor}
+button.x{padding:6px 10px;background:transparent;color:var(--mut);border:1px solid var(--line)}
+.wrap{display:grid;gap:20px;padding:20px;max-width:1280px;margin:0 auto;grid-template-columns:minmax(0,1fr)}
+@media(min-width:980px){.wrap{grid-template-columns:minmax(0,520px) minmax(0,1fr);align-items:start}.prev{position:sticky;top:12px}}
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:16px;border:1px solid var(--line)}
+h2{margin:0 0 10px;font-size:16px;font-weight:800}
+label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin-bottom:3px}
+input,textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--inp);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+textarea{min-height:110px;resize:vertical}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.g4{display:grid;grid-template-columns:60px 90px 1fr 1fr 36px;gap:8px;align-items:end}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.trk{border-top:1px dashed var(--line);padding:10px 0}
+.tbox{border:2px solid var(--line);border-radius:14px;padding:12px;margin-bottom:14px}
+.hint{color:var(--mut);font-size:13px;margin:6px 0 0}
+.prev canvas{width:100%;height:auto;display:block;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.msg{font-size:13px;color:var(--mut);min-height:18px;margin:8px 0}
+.ck{padding:6px 10px;border-radius:8px;margin-bottom:6px;font-size:13px}.ck.err{background:#FDE8E8;color:#9B1C1C}.ck.warn{background:#FFF4DB;color:#7A4B00}.ck.ok{background:#E3F6EA;color:#14653A}.ck.note{background:var(--inp);color:var(--mut)}
+
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.tabs{display:none}
+input,textarea,select{font-size:16px}
+button{min-height:40px}
+.cvw{overflow:auto;border-radius:14px}
+.cvw canvas{cursor:zoom-in}
+.prev .cvw.z canvas{width:220%;max-width:none;cursor:zoom-out}
+@media(max-width:979px){
+ body{padding-bottom:90px}
+ .top{padding:12px 14px}.top h1{font-size:17px}
+ .wrap{padding:12px;gap:12px}.card{padding:14px}
+ .wrap[data-tab="in"] .prev{display:none}.wrap[data-tab="out"] .inp{display:none}
+ .tabs{display:flex;gap:8px;position:sticky;top:0;z-index:15;padding:8px 12px;background:var(--bg)}
+ .tabs button{flex:1;min-height:46px;background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+ .tabs button.on{background:var(--acc);color:var(--navy);border-color:var(--acc)}
+ .acts{position:fixed;left:0;right:0;bottom:0;z-index:20;flex-wrap:nowrap;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--navy)}
+ .acts button{flex:1;min-height:46px;white-space:normal;line-height:1.2;padding:8px 6px}
+}
+@media(max-width:560px){
+ .g2{grid-template-columns:1fr}
+ .g3{grid-template-columns:1fr 1fr}.g3>:nth-child(3){grid-column:1/-1}
+ .g4{grid-template-columns:70px 1fr 44px}
+ .g4>:nth-child(1){grid-column:1;grid-row:1}.g4>:nth-child(2){grid-column:2;grid-row:1}.g4>:nth-child(5){grid-column:3;grid-row:1}
+ .g4>:nth-child(3){grid-column:1/-1;grid-row:2}.g4>:nth-child(4){grid-column:1/-1;grid-row:3}
+ .erp{grid-template-columns:1fr 1fr 44px}
+ .erp>:nth-child(2){grid-column:1/-1;grid-row:2}.erp>:nth-child(3){grid-column:2;grid-row:1}.erp>:nth-child(4){grid-column:3;grid-row:1}
+ .cg{grid-template-columns:1fr 1fr 44px}
+ .cg>:nth-child(1){grid-column:1/-1;grid-row:1}.cg>:nth-child(2){grid-row:2}.cg>:nth-child(3){grid-row:2}.cg>:nth-child(4){grid-row:2}
+}
+</style></head><body>
+<div class="top"><div><h1>Transporter Cargo Report Maker</h1><small>Paste the transporter messages, get the management chart</small></div>
+<div class="acts"><button id="dl">Download PNG</button><button class="sec" id="sh">Share</button><button class="sec" id="reset">Reset all</button></div></div>
+<div class="tabs"><button class="on" data-tab="in" id="tin">1. Paste &amp; check</button><button data-tab="out" id="tout">2. Image</button></div>
+<div class="wrap" data-tab="in">
+<div class="inp">
+ <div class="card"><h2>Paste transporter messages</h2>
+  <textarea id="paste" placeholder="Paste all the messages here, for example “From Shahjoki … From Selim Cargo … From New js …”"></textarea>
+  <div style="margin-top:8px"><button id="parse">Read pasted text</button> <button class="sec" style="color:var(--ink)" id="reset2">Reset all</button></div><p class="hint" id="pmsg">Truck numbers, drivers, phones, sizes and Local/Export are picked up automatically. You can edit anything after.</p></div>
+ <div class="card"><h2>Data check</h2><div id="chk"></div></div>
+ <div class="card"><details id="auditd"><summary style="cursor:pointer"><b>How your text was read</b> (every pasted line)</summary><div id="audit" style="margin-top:8px"></div></details></div>
+ <div class="card"><h2>Basic details</h2><div class="g2">
+  <div><label>Loading date</label><input type="date" data-b="date"></div><div></div>
+  <div><label>From (origin)</label><input data-b="origin"></div><div><label>Default depot</label><input data-b="depot"></div></div>
+  <div style="margin-top:10px"><label>Known depots (comma separated). A depot not in this list is flagged.</label><input data-b="depots"></div>
+  <p class="hint">Each truck’s depot is read from its own message (for example AFL - SAPL), so one day can have several depots.</p></div>
+ <div id="ts"></div>
+ <button id="addt">+ Add transporter</button>
+</div>
+<div class="prev"><div class="cvw" id="cvw"><canvas id="cv"></canvas></div><p class="hint" id="zh">Tap the image to zoom in or out.</p><p class="msg" id="msg"></p></div>
+</div>
+<datalist id="known"><option value="Salim Cargo"><option value="Shahjoki"><option value="New JS"></datalist>
+<script>
+(function(){
+var KEY="transporterReportV1";
+var EMPTY={date:"",origin:"AFL",depot:"KDS",ts:[],depots:["KDS","SAPL","SML","BM"]};
+var st;try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!st||!st.ts)st=JSON.parse(JSON.stringify(EMPTY));
+if(!st.depots||!st.depots.length)st.depots=["KDS","SAPL","SML","BM"];
+function depList(v){return String(v||"").split(/[,\s]+/).map(function(x){return x.trim().toUpperCase()}).filter(Boolean)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+var $=function(i){return document.getElementById(i)};
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+function arm(btn,msg){if(btn._a){btn._a=0;btn.textContent=btn._t;clearTimeout(btn._h);return true}btn._t=btn.textContent;btn._a=1;btn.textContent=msg;btn._h=setTimeout(function(){btn._a=0;btn.textContent=btn._t},5000);return false}
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fdate(iso){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||"");return m?m[3]+"-"+MON[+m[2]-1]+"-"+m[1]:(iso||"")}
+function fph(d){d=String(d||"").replace(/\D/g,"");return d.length==11?d.slice(0,5)+"-"+d.slice(5):d}
+function pct(v){return (Math.round(v*10)/10)+"%"}
+function rkey(s){return String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"")}
+
+/* ---------- form ---------- */
+function renderForm(){
+ document.querySelectorAll("[data-b]").forEach(function(el){el.value=el.dataset.b=="depots"?(st.depots||[]).join(", "):(st[el.dataset.b]||"")});
+ var h="";
+ st.ts.forEach(function(t,i){
+  h+='<div class="tbox"><div class="g2" style="margin-bottom:8px"><div><label>Transporter</label><input list="known" data-p="'+i+'.name" value="'+esc(t.name)+'"></div><div><label>Expected trucks (from export program, optional)</label><input inputmode="numeric" data-p="'+i+'.exp" value="'+esc(t.exp)+'"></div></div>';
+  t.trucks.forEach(function(k,j){var P=i+".trucks."+j+".";
+   h+='<div class="trk"><div class="g3"><div><label>Truck no.</label><input data-p="'+P+'plate" value="'+esc(k.plate)+'"></div><div><label>Driver</label><input data-p="'+P+'driver" value="'+esc(k.driver)+'"></div><div><label>Mobile</label><input inputmode="tel" data-p="'+P+'phone" value="'+esc(k.phone)+'"></div></div>'+
+   '<div class="g4"><div><label>Feet</label><input inputmode="numeric" data-p="'+P+'ft" value="'+esc(k.ft)+'"></div><div><label>Type</label><select data-p="'+P+'type"><option'+(k.type=="Export"?" selected":"")+'>Export</option><option'+(k.type=="Local"?" selected":"")+'>Local</option></select></div><div><label>Route</label><input data-p="'+P+'r" value="'+esc(k.r)+'"></div><div><label>Date</label><input type="date" data-p="'+P+'date" value="'+esc(k.date)+'"></div><button class="x" data-a="dk:'+i+':'+j+'">✕</button></div></div>';
+  });
+  h+='<button class="sec" style="color:var(--ink)" data-a="ak:'+i+'">+ Truck</button> <button class="x" style="float:right" data-a="dt:'+i+'">Remove transporter</button></div>';
+ });
+ $("ts").innerHTML=h;
+}
+document.addEventListener("input",function(ev){
+ var t=ev.target;
+ if(t.dataset.b=="depots")st.depots=depList(t.value);else if(t.dataset.b)st[t.dataset.b]=t.value;
+ else if(t.dataset.p){var k=t.dataset.p.split("."),o=st.ts;for(var i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=t.value}
+ else return;
+ save();draw();
+});
+document.addEventListener("click",function(ev){
+ var b=ev.target.closest("[data-a]");if(!b)return;
+ var a=b.dataset.a.split(":"),t=st.ts[a[1]];
+ if(a[0]=="ak")t.trucks.push({plate:"",driver:"",phone:"",ft:"23",type:"Export",r:st.origin+"-"+st.depot,date:st.date});
+ if(a[0]=="dk")t.trucks.splice(a[2],1);
+ if(a[0]=="dt")st.ts.splice(a[1],1);
+ save();renderForm();draw();
+});
+$("addt").onclick=function(){st.ts.push({name:"",exp:"",trucks:[]});save();renderForm();draw()};
+function resetAll(){st={date:"",origin:st.origin||"AFL",depot:st.depot||"KDS",ts:[],depots:st.depots};pw=[];aud=[];lastParsed="";renderAudit();$("paste").value="";$("pmsg").textContent="Cleared. Paste the new messages above and press Read pasted text.";$("msg").textContent="";save();renderForm();draw();$("paste").focus()}
+$("reset").onclick=function(){if(arm(this,"Tap again to clear all"))resetAll()};$("reset2").onclick=resetAll;
+
+/* ---------- parser ---------- */
+var KNOWN=["Salim Cargo","Shahjoki","New JS"];
+function nk(s){return String(s||"").toLowerCase().replace(/cargo|transport/g,"").replace(/[^a-z0-9]/g,"")}
+function lev(a,b){var d=[],i,j;for(i=0;i<=a.length;i++)d[i]=[i];for(j=1;j<=b.length;j++)d[0][j]=j;for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]==b[j-1]?0:1));return d[a.length][b.length]}
+function canon(name,w){var k=nk(name);for(var i=0;i<KNOWN.length;i++){var q=nk(KNOWN[i]);if(k===q)return KNOWN[i];if(k.length>2&&lev(k,q)<=1){var t="“"+name+"” was treated as “"+KNOWN[i]+"”. Change the name if that is wrong.";if(!w.some(function(x){return x[1]==t}))w.push(["warn",t]);return KNOWN[i]}}return name}
+function tcase(s){return s.replace(/\S+/g,function(x){return x[0].toUpperCase()+x.slice(1).toLowerCase()})}
+var MN=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+function isoD(d,m,y){d=+d;m=+m;y=y?+y:new Date().getFullYear();if(y<100)y+=2000;if(m<1||m>12||d<1||d>31)return"";return y+"-"+("0"+m).slice(-2)+"-"+("0"+d).slice(-2)}
+var PL=/\b(Dhaka\s*Metro|(?:Ctg|Chattogram|Chittagong|Chatto)\s*Metro|D\.?\s*M|C\.?\s*M)[.\s\-]*([A-Za-z]{1,3})\s*[.\-\s]*(\d{2})\s*[.\-\s]*(\d{4})\b/i;
+var PH=/(?:^|[^\d])((?:\+?88[\s-]?)?01[3-9](?:[\s-]*\d){8})(?!\d)/;
+var DT=/(\d{1,2})\s*[\/\-.]+\s*(\d{1,2})\s*[\/\-.]+\s*(\d{2,4})/;
+var DN=/(\d{1,2})(?:st|nd|rd|th)?[\s\-\/.]*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s\-\/.,]*(\d{4}|\d{2})?(?!\d)/i;
+var SZ=/(\d{1,2})\s*[-,.]?\s*(?:fe+t|fit|ft|foot|fut|['’′])/i;
+var RT=/\b((?:[A-Za-z]\s*){2,4}?)\s*(?:to|-|–)\s*(i?(?:[A-Za-z]\s*){2,4})(?=\W|$)/i;
+var FLUFF=/today|cargo|program|prigram|mobile|mob\b|cell|phone|contact|number|truck|lorry|date|size|route/gi;
+var pw=[],aud=[],lastErr=0,lastParsed="";
+function plateOf(m){var p=/dhaka/i.test(m[1])?"DM":/ctg|chatto|chittagong/i.test(m[1])?"CM":m[1].replace(/[.\s]/g,"").toUpperCase();return p+" "+m[2].toUpperCase()+" "+m[3]+"-"+m[4]}
+function parseText(txt){
+ var W=[],ts=[],T=null,cur=null,ctx={},fresh=false,AU=[],bad=[],dates={};
+ function start(n){T={name:canon(n.trim(),W),trucks:[],ph:0,st:null};ts.push(T);cur=null;ctx={}}
+ function proc(l,tg){
+  var m=/^(?:from|transporter)\s*[:\-]?\s+(.+)$/i.exec(l);
+  if(m){var nm=m[1],dh=DT.exec(nm)||DN.exec(nm),dd="";tg.push("Transporter");if(dh){dd=DN.test(nm)&&!DT.test(nm)?isoD(dh[1],MN.indexOf(dh[2].toLowerCase().slice(0,3))+1,dh[3]):isoD(dh[1],dh[2],dh[3]);nm=nm.slice(0,dh.index);tg.push("Date")}var tm=/\s*total\s*[:\-]?\s*(\d+)\s*$/i.exec(nm);if(tm)nm=nm.slice(0,tm.index);start(nm.replace(/[\s.:,\-]+$/,""));if(tm){T.st=+tm[1];tg.push("Total")}if(dd)ctx.date=dd;return}
+  m=/^total\s*[:\-]?\s*(\d+)/i.exec(l);if(m&&T){T.st=+m[1];tg.push("Total");return}
+  m=/^(?:depot|dpot|destination)\s*[:\-]?\s*([A-Za-z]{2,6})[\s.]*$/i.exec(l);if(m){put("to",m[1].toUpperCase(),"Route");return}
+  m=/^(?:driver|drvr|drv)\s*(?:name)?\s*[#:\-–.]*\s*(.*?)[\s.]*$/i.exec(l);
+  if(m){if(cur&&!cur.closed&&m[1]){cur.drv=tcase(m[1]);cur.closed=true;fresh=true;tg.push("Driver")}else tg.push("Unread");return}
+  var r=l,pm=PL.exec(r);
+  if(pm){if(!T)start("Unknown transporter");cur={plate:plateOf(pm),phone:"",drv:"",closed:false,date:ctx.date||"",ft:ctx.ft||"",type:ctx.type||"",from:ctx.from||"",to:ctx.to||""};T.trucks.push(cur);fresh=false;r=r.replace(PL," ");tg.push("Truck no.")}
+  var hm=PH.exec(r);
+  if(hm){var dg=hm[1].replace(/\D/g,"");if(dg.length==13)dg=dg.slice(2);r=r.replace(hm[1]," ");if(T)T.ph++;if(cur&&!cur.phone){cur.phone=dg;tg.push("Mobile")}else tg.push("Unread")}
+  function put(f,v,lab){tg.push(lab);if(cur&&!cur.closed&&!cur[f])cur[f]=v;else if(f=="ft"&&cur&&cur.closed&&!cur.ft&&fresh){cur.ft=v;W.push(["warn","The size line “"+l+"” came right after the driver of "+cur.plate+", so it was applied to that truck. Please check."])}else{ctx[f]=v;fresh=false}}
+  var dm=DT.exec(r);
+  if(dm){var iso=isoD(dm[1],dm[2],dm[3]);if(iso)put("date",iso,"Date");r=r.replace(DT," ")}
+  else if((dm=DN.exec(r))){var iso2=isoD(dm[1],MN.indexOf(dm[2].toLowerCase().slice(0,3))+1,dm[3]);if(iso2)put("date",iso2,"Date");r=r.replace(DN," ")}
+  var sm=SZ.exec(r);if(sm){put("ft",sm[1],"Size");r=r.replace(SZ," ")}
+  if(/\blocal\b/i.test(r)){put("type","Local","Type");r=r.replace(/\blocal\b/i," ")}
+  var em=/\bex\s*[:.]?\s*pr\w*|\bexport\b/i;if(em.test(r)){put("type","Export","Type");r=r.replace(em," ")}
+  var rm=RT.exec(r);
+  if(rm){put("from",rm[1].replace(/\s/g,"").toUpperCase(),"Route");put("to",rm[2].replace(/\s/g,"").toUpperCase(),"Route");r=r.replace(RT," ")}
+  else if((rm=/\bfor\s+([A-Za-z]{2,4})\b/i.exec(r))){put("to",rm[1].toUpperCase(),"Route");r=r.replace(rm[0]," ")}
+  var left=r.replace(FLUFF,"").replace(/[^A-Za-z0-9]/g,"");
+  if(left.length>1)tg.push("Unread");else if(!tg.length)tg.push("Ignored");
+ }
+ txt.split(/\r?\n/).forEach(function(raw){var l=raw.trim();if(!l)return;var tg=[];proc(l,tg);AU.push({t:l,g:tg});if(tg.indexOf("Unread")>=0)bad.push(l)});
+ /* merge same transporter */
+ var out=[],map={};
+ ts.forEach(function(t){var k=nk(t.name),o=map[k];if(!o){o={name:t.name,exp:"",trucks:[],ph:0,blocks:0,sc:0,st:0};map[k]=o;out.push(o)}o.ph+=t.ph;o.blocks++;if(t.st!=null){o.sc++;o.st+=t.st}t.trucks.forEach(function(c){o.trucks.push(c)})});
+ /* majority route and date */
+ var rc={},best="",bn=0,bd="",bc=0;
+ out.forEach(function(t){t.trucks.forEach(function(c){if(c.from&&c.to){var k=c.from+"|"+c.to;rc[k]=(rc[k]||0)+1;if(rc[k]>bn){bn=rc[k];best=k}}if(c.date)dates[c.date]=(dates[c.date]||0)+1})});
+ for(var d in dates)if(dates[d]>bc){bc=dates[d];bd=d}
+ var org=best?best.split("|")[0]:st.origin,dep=best?best.split("|")[1]:st.depot,aT=0,aR=0,n=0;
+ var dl=[];out.forEach(function(t){t.trucks.forEach(function(c){if(c.to&&dl.indexOf(c.to)<0)dl.push(c.to)})});
+ if(best&&(org!==st.origin||dep!==st.depot||dl.length>1))W.push(["note","Origin “"+org+"”. Depots found in your messages: "+(dl.join(", ")||dep)+". Default depot for a truck with none: "+dep+"."]);
+ out.forEach(function(t){
+  t.trucks=t.trucks.map(function(c){n++;if(!c.type){c.type="Export";aT++}if(!c.from||!c.to)aR++;return{plate:c.plate,driver:c.drv,phone:c.phone,ft:c.ft,type:c.type,r:(c.from||org)+"-"+(c.to||dep),date:c.date}});
+  if(t.ph!==t.trucks.length)W.push(["err",t.name+": "+t.ph+" mobile number(s) found but "+t.trucks.length+" truck(s) read. Something may be missing."]);
+  if(t.sc===t.blocks&&t.st!==t.trucks.length)W.push(["err",t.name+": your message says total "+t.st+" but "+t.trucks.length+" truck(s) were read."]);
+  if(/^unknown transporter$/i.test(t.name))W.push(["err","Trucks were found before any “From <transporter>” line, so the transporter is unknown."]);
+ });
+ if(bad.length)W.push(["err",bad.length+" line(s) could not be read. See “How your text was read” below. Fix or type them in the form."]);
+ var loose=(txt.match(/[A-Za-z]{2}[A-Za-z.\s\-]{0,8}\d{2}[\s.\-]*\d{4}(?!\d)/g)||[]).length;
+ if(loose!==n)W.push(["err","The text seems to contain "+loose+" truck-number-like item(s) but "+n+" truck(s) were read. Please compare."]);
+ if(aT)W.push(["warn",aT+" truck(s) had no Export/Local type in the text and were treated as Export."]);
+ if(aR)W.push(["warn",aR+" truck(s) had no complete route in the text and were given "+org+"-"+dep+" where missing."]);
+ if(n&&!bd)W.push(["warn","No date was found in the messages. Please set the loading date."]);
+ return{ts:out,warn:W,date:bd,origin:org,depot:dep,audit:AU,n:n,bad:bad};
+}
+var TGC={"Truck no.":"#2F6FED",Mobile:"#17A398",Driver:"#8B5CF6",Date:"#B7791F",Size:"#B7791F",Type:"#B7791F",Route:"#B7791F",Transporter:"#0E2742",Total:"#0E2742",Ignored:"#6B778A",Unread:"#E5484D"};
+function renderAudit(){
+ var h="",bad=0;
+ aud.forEach(function(a){var u=a.g.indexOf("Unread")>=0;if(u)bad++;
+  h+='<div style="padding:4px 0;border-bottom:1px solid var(--line);'+(u?"background:#FDE8E8;color:#9B1C1C;":"")+'font-size:13px">'+a.g.map(function(g){return '<span style="display:inline-block;margin-right:4px;padding:1px 7px;border-radius:9px;color:#fff;background:'+(TGC[g]||"#666")+';font-size:11px;font-weight:700">'+(g=="Unread"?"Not understood":g)+'</span>'}).join("")+esc(a.t)+"</div>"});
+ $("audit").innerHTML=aud.length?'<p class="hint" style="margin:0 0 8px">'+aud.length+' lines: '+(aud.length-bad)+' understood, '+bad+' not understood.</p>'+h:'<p class="hint">Nothing pasted yet.</p>';
+ if(bad)$("auditd").open=true;
+}
+$("parse").onclick=function(){
+ var txt=$("paste").value,r=parseText(txt);pw=r.warn;aud=r.audit;lastParsed=txt.trim();
+ if(!r.n){$("pmsg").textContent="No trucks were found. Each transporter should start with “From <name>”.";renderAudit();draw();return}
+ st.ts=r.ts;st.date=r.date;st.origin=r.origin;st.depot=r.depot;save();renderForm();renderAudit();draw();
+ $("pmsg").textContent="Read "+r.n+" truck(s) from "+r.ts.length+" transporter(s). Please review the Data check.";
+};
+$("paste").addEventListener("paste",function(){setTimeout(function(){$("parse").click()},60)});
+$("paste").addEventListener("input",function(){renderChecks(calc())});
+
+function routeParts(r){var m=/^\s*([A-Za-z0-9]{2,6})\s*(?:-|–|to)\s*(.+?)\s*$/i.exec(r||"");return m?{from:m[1],to:m[2]}:{from:"",to:""}}
+function depOf(k){return (routeParts(k.r).to||st.depot||"").trim().toUpperCase()}
+function nearest(d){var q=rkey(d),best="";st.depots.forEach(function(x){if(lev(q,rkey(x))<=1)best=best||x});return best}
+/* ---------- calc ---------- */
+function calc(){
+ var C={ts:[],all:0,exp:0,loc:0,cats:[],deps:[]},cm={},dm={};
+ st.ts.forEach(function(t){
+  var o={name:t.name||"(no name)",expN:t.exp===""||t.exp==null?null:Math.round(parseFloat(t.exp)||0),trucks:t.trucks,n:t.trucks.length,loc:0};
+  t.trucks.forEach(function(k){
+   k._cat=k.type=="Local"?"Local":(k.ft?k.ft+" ft":"Size not set");k._dep=depOf(k);
+   if(k._dep){if(!dm[k._dep]){dm[k._dep]={name:k._dep,n:0};C.deps.push(dm[k._dep])}dm[k._dep].n++}
+   if(k.type=="Local")o.loc++;
+   if(!cm[k._cat]){cm[k._cat]=1;C.cats.push(k._cat)}
+  });
+  o.ex=o.n-o.loc;C.all+=o.n;C.loc+=o.loc;C.exp+=o.ex;C.ts.push(o);
+ });
+ C.deps.sort(function(a,b){return b.n-a.n});
+ C.cats.sort(function(a,b){if(a=="Local")return 1;if(b=="Local")return -1;return (parseInt(b)||0)-(parseInt(a)||0)});
+ return C;
+}
+
+/* ---------- data check ---------- */
+function validate(C){
+ var L=[],seenP={},seenH={},route=rkey(st.origin+"-"+st.depot);
+ pw.forEach(function(s){L.push(s)});
+ C.ts.forEach(function(t){
+  t.trucks.forEach(function(k,j){
+   var id=t.name+" truck "+(j+1)+(k.plate?" ("+k.plate+")":"");
+   if(!k.plate)L.push(["err",id+": truck number is missing"]);
+   var d=String(k.phone||"").replace(/\D/g,"");
+   if(!d)L.push(["err",id+": mobile number is missing"]);else if(d.length!=11)L.push(["err",id+": mobile number "+k.phone+" is not 11 digits"]);
+   if(!(k.driver||"").trim())L.push(["warn",id+": driver name is missing"]);
+   if(!k.ft)L.push(["warn",id+": truck size is missing"]);else if(+k.ft<10||+k.ft>40)L.push(["warn",id+": size "+k.ft+" ft looks unusual. Typing mistake?"]);
+   var rp=routeParts(k.r);
+   if(rp.from&&rkey(rp.from)!==rkey(st.origin))L.push(["warn",id+": from “"+rp.from+"” differs from "+st.origin+". Typing mistake?"]);
+   var dp=depOf(k);if(dp&&!depKnown(dp)){var sg=nearest(dp);L.push(["warn",id+": depot “"+dp+"” is not in your known depots ("+st.depots.join(", ")+")."+(sg?" Did you mean "+sg+"?":" If it is a new depot, add it to Known depots.")])}
+   if(k.date&&st.date&&k.date!==st.date)L.push(["warn",id+": date "+fdate(k.date)+" differs from the loading date "+fdate(st.date)]);
+   if(k.type=="Local")L.push(["note",id+": marked Local, so it is shown separately and not counted as export"]);
+   var pk=rkey(k.plate);if(pk){if(seenP[pk])L.push(["err",id+": same truck number appears twice. Was it pasted twice?"]);seenP[pk]=1}
+   if(d.length==11){if(seenH[d]&&seenH[d]!==pk)L.push(["note",id+": mobile "+fph(d)+" is also used by another truck"]);seenH[d]=pk}
+  });
+  if(t.expN!=null){
+   if(t.ex!==t.expN)L.push(["err",t.name+": "+t.ex+" export truck(s) listed but the export program says "+t.expN+(t.loc?" ("+t.loc+" Local truck(s) not counted)":"")]);
+  }
+ });
+ return L;
+}
+function renderChecks(C){
+ var L=validate(C),e=0,w=0,h="",pt=$("paste").value.trim();
+ if(pt&&pt!==lastParsed)L.unshift(["err","The pasted text has not been read yet. Press Read pasted text."]);
+ L.forEach(function(x){if(x[0]=="err")e++;if(x[0]=="warn")w++});lastErr=e;
+ h+=!C.all?'<div class="ck note">No trucks yet. Paste the messages and press Read pasted text.</div>':e?'<div class="ck err"><b>✖ '+e+' problem'+(e>1?'s':'')+' found. Check before sharing.</b></div>':(w?'<div class="ck warn"><b>⚠ '+w+' item'+(w>1?'s':'')+' to check</b></div>':'<div class="ck ok"><b>✔ All checks passed</b></div>');
+ var sym={err:"✖",warn:"⚠",note:"ℹ"};
+ L.forEach(function(x){h+='<div class="ck '+x[0]+'">'+sym[x[0]]+" "+esc(x[1])+"</div>"});
+ if(C.all){var anyExp=C.ts.some(function(t){return t.expN!=null});
+  h+='<div class="ck note">Counted: '+C.all+' trucks ('+C.exp+' export, '+C.loc+' local) from '+C.ts.length+' transporter(s). '+(anyExp?"":"Enter the expected trucks per transporter to compare with your export program.")+'</div>'}
+ $("chk").innerHTML=h;
+}
+
+/* ---------- drawing ---------- */
+var cv=$("cv"),ctx;
+var NAVY="#0E2742",AMB="#F6A21E",BLUE="#2F6FED",TEAL="#17A398",INK="#16202E",MUT="#6B778A",WH="#FFFFFF",RED="#E5484D";
+var TP=[BLUE,TEAL,"#8B5CF6","#2E9E4F","#0E7490"],SZP=[BLUE,AMB,TEAL,"#8B5CF6","#0E7490"];
+var FAM='Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
+function fn(w,s){return w+" "+s+"px "+FAM}
+function rr(x,y,w,h,r,fill,stroke,lw){ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(r,h/2,w/2));if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||2;ctx.stroke()}}
+function tx(s,x,y,font,col,al,bs){ctx.font=font;ctx.fillStyle=col;ctx.textAlign=al||"left";ctx.textBaseline=bs||"top";ctx.fillText(s,x,y)}
+function tw(s,font){ctx.font=font;return ctx.measureText(s).width}
+function fit(s,w,sz,wt,min){while(sz>min&&tw(s,fn(wt,sz))>w)sz--;return fn(wt,sz)}
+function sp(txt,x,cy,col,tc,sz){var f=fn(700,sz),w=tw(txt,f)+sz*1.2,h=sz+10;rr(x,cy-h/2,w,h,h/2,col);tx(txt,x+w/2,cy,f,tc,"center","middle");return w}
+function catCol(C,c){return c=="Local"?RED:SZP[C.cats.filter(function(x){return x!="Local"}).indexOf(c)%SZP.length]}
+
+function szCol(C,ft){var i=C.cats.filter(function(x){return x!="Local"}).indexOf(ft?ft+" ft":"Size not set");return i<0?"#64748B":SZP[i%SZP.length]}
+var DPAL=["#0E2742",AMB,TEAL,"#8B5CF6",BLUE,"#E5484D"];
+function depKnown(d){return st.depots.map(rkey).indexOf(rkey(d))>=0}
+function draw(){
+ var C=calc(),W=1080,nT=C.ts.length,nD=C.deps.length,maxN=1;
+ C.ts.forEach(function(t){maxN=Math.max(maxN,t.n,t.expN||0)});
+ var depH=nD?84:0,chartH=70+54*nT+depH+46,y0=364,ty=y0+chartH+16,H=ty;
+ C.ts.forEach(function(t){H+=48+24+36*t.n+14});H+=56;
+ cv.width=W*2;cv.height=H*2;ctx=cv.getContext("2d");ctx.setTransform(2,0,0,2,0,0);
+ ctx.fillStyle="#EEF1F6";ctx.fillRect(0,0,W,H);
+ ctx.fillStyle=NAVY;ctx.fillRect(0,0,W,226);
+ ctx.fillStyle="#143559";for(var i=0;i<14;i++){var x=700+i*28;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+14,0);ctx.lineTo(x-46,226);ctx.lineTo(x-60,226);ctx.fill()}
+ ctx.fillStyle=AMB;ctx.fillRect(0,218,W,8);
+ tx("TRANSPORTER-WISE CARGO",50,24,fit("TRANSPORTER-WISE CARGO",900,52,900,34),WH);
+ var dn=C.deps.map(function(d){return d.name});if(!dn.length)dn=[st.depot||"-"];
+ var sub=dn.length<=3?"From "+(st.origin||"-")+" to "+dn.join(", ")+(dn.length>1?" Depots":" Depot"):"From "+(st.origin||"-")+" to "+dn.length+" depots: "+dn.join(", ");
+ tx(sub,50,88,fit(sub,980,30,800,16),AMB);
+ tx("Loading date "+(st.date?fdate(st.date):"-")+"  |  "+C.all+" trucks from "+nT+" transporter"+(nT==1?"":"s"),50,128,fn(500,22),"#B9C7DA");
+ var K=[[C.all,"total trucks",AMB],[C.exp,"export trucks",BLUE],[C.loc,"local trucks",RED],[nT,"transporters",TEAL]],cw=(W-100-60)/4,kx=50;
+ K.forEach(function(k){rr(kx,244,cw,100,20,WH);rr(kx,244,9,100,4.5,k[2]);tx(String(k[0]),kx+28,252,fn(900,50),INK);tx(k[1],kx+28,312,fn(600,19),MUT);kx+=cw+20});
+ rr(50,y0,W-100,chartH,20,WH);tx("Trucks by transporter",74,y0+18,fn(800,24),INK);
+ var bx=270,unit=Math.min(44,500/maxN);
+ C.ts.forEach(function(t,i){
+  var ry=y0+60+54*i,tc=TP[i%TP.length];
+  rr(74,ry+6,8,34,4,tc);tx(t.name,94,ry+23,fit(t.name,160,21,700,14),INK,"left","middle");
+  t.trucks.forEach(function(k,j){rr(bx+j*unit,ry+6,unit-5,34,7,catCol(C,k._cat))});
+  if(t.expN!=null)for(var j=t.n;j<t.expN;j++){ctx.setLineDash([5,4]);rr(bx+j*unit,ry+6,unit-5,34,7,null,RED,2);ctx.setLineDash([])}
+  var ok=t.expN==null||t.ex===t.expN;
+  tx(t.n+" truck"+(t.n==1?"":"s")+"  ("+pct(C.all?t.n/C.all*100:0)+")",W-74,ry+4,fn(800,20),INK,"right");
+  if(t.expN!=null)tx(t.ex+" export vs "+t.expN+" in program "+(ok?"✔":"✖"),W-74,ry+28,fn(700,15),ok?"#14853E":RED,"right");
+  else if(t.loc)tx(t.loc+" local",W-74,ry+28,fn(700,15),RED,"right");
+ });
+ if(nD){
+  var dy=y0+60+54*nT+8;
+  tx("Trucks by depot",74,dy,fn(800,18),INK);
+  rr(74,dy+28,W-148,16,8,"#E7ECF3");
+  var cx=74,cols=C.deps.map(function(d,i){return DPAL[i%DPAL.length]});
+  ctx.save();ctx.beginPath();ctx.roundRect(74,dy+28,W-148,16,8);ctx.clip();
+  C.deps.forEach(function(d,i){var w2=(W-148)*d.n/C.all;ctx.fillStyle=cols[i];ctx.fillRect(cx,dy+28,w2+1,16);cx+=w2});ctx.restore();
+  var items=C.deps.map(function(d){return d.name+"  "+d.n+" truck"+(d.n==1?"":"s")+" ("+pct(C.all?d.n/C.all*100:0)+")"}),sz=17;
+  while(sz>12&&items.reduce(function(a,s){return a+tw(s,fn(700,sz))+40},0)>W-148)sz--;
+  var lx=74;items.forEach(function(s,i){var bad=!depKnown(C.deps[i].name);rr(lx,dy+55,14,14,4,cols[i]);tx(s+(bad?" ?":""),lx+22,dy+62,fn(700,sz),bad?RED:INK,"left","middle");lx+=tw(s,fn(700,sz))+46});
+ }
+ var lx2=74,ly=y0+chartH-30;
+ C.cats.forEach(function(c){rr(lx2,ly,16,16,4,catCol(C,c));tx(c,lx2+24,ly+8,fn(600,16),MUT,"left","middle");lx2+=tw(c,fn(600,16))+54});
+ if(C.ts.some(function(t){return t.expN!=null&&t.expN>t.n})){ctx.setLineDash([4,3]);rr(lx2,ly,16,16,4,null,RED,2);ctx.setLineDash([]);tx("missing vs program",lx2+24,ly+8,fn(600,16),RED,"left","middle")}
+ var y=ty,cl=[70,112,312,520,690,780,900];
+ C.ts.forEach(function(t,i){
+  var tc=TP[i%TP.length],h=48+24+36*t.n+14;
+  rr(50,y,W-100,h-14,18,WH);rr(50,y,W-100,48,18,tc);ctx.fillStyle=tc;ctx.fillRect(50,y+24,W-100,24);
+  tx(t.name,74,y+24,fit(t.name,520,24,800,16),WH,"left","middle");
+  tx(t.n+" truck"+(t.n==1?"":"s")+"  |  "+pct(C.all?t.n/C.all*100:0)+(t.loc?"  |  "+t.loc+" local":""),W-74,y+24,fn(700,19),WH,"right","middle");
+  ["No.","Truck no.","Driver","Mobile","Size","Depot","Type"].forEach(function(c,j){tx(c,cl[j],y+60,fn(700,15),MUT,"left","middle")});
+  t.trucks.forEach(function(k,j){
+   var ry=y+72+36*j,mid=ry+18,loc=k.type=="Local";
+   ctx.fillStyle=loc?"#FDECEC":(j%2?"#F6F8FB":WH);ctx.fillRect(50,ry,W-100,36);
+   tx(String(j+1),cl[0],mid,fn(700,18),MUT,"left","middle");
+   tx(k.plate||"-",cl[1],mid,fn(800,19),INK,"left","middle");
+   if(k.driver)tx(k.driver,cl[2],mid,fit(k.driver,195,19,600,13),INK,"left","middle");else tx("not given",cl[2],mid,fn(500,17),RED,"left","middle");
+   tx(fph(k.phone)||"-",cl[3],mid,fn(600,19),INK,"left","middle");
+   var sc=szCol(C,k.ft);sp(k.ft?k.ft+" ft":"-",cl[4],mid,sc,sc==AMB?NAVY:WH,15);
+   var kn=depKnown(k._dep);sp(k._dep||"-",cl[5],mid,kn?"#DCE6F7":RED,kn?NAVY:WH,15);
+   sp(k.type,cl[6],mid,loc?RED:"#E7ECF3",loc?WH:INK,15);
+  });
+  y+=h;
+ });
+ var foot=[st.origin&&(st.origin+" to "+dn.join(", ")),st.date&&fdate(st.date),"Total "+C.all+" trucks"].filter(Boolean).join("  |  ");tx(foot,W/2,H-28,fit(foot,980,17,500,12),MUT,"center","middle");
+ renderChecks(C);
+}
+
+/* ---------- download ---------- */
+$("dl").onclick=function(){
+ if(lastErr&&!arm(this,"Problem found. Press again to save anyway"))return;
+ $("msg").textContent="";
+ cv.toBlob(async function(blob){
+  var name="Transporter_Cargo_"+(st.date||"report")+".png";
+  var dl=null;try{dl=await claude.use("downloads")}catch(e){}
+  if(dl){try{await dl.save({filename:name,data:blob});$("msg").textContent="Saved.";return}catch(e){if(e&&e.code=="declined")return}}
+  var a=document.createElement("a");a.href=cv.toDataURL("image/png");a.download=name;a.click();
+  $("msg").textContent="If nothing downloaded, press and hold (or right-click) the image and choose Save image.";
+ },"image/png");
+};
+renderForm();renderAudit();draw();
+document.querySelectorAll("[data-tab]").forEach(function(b){if(b.tagName!="BUTTON")return;b.addEventListener("click",function(){document.querySelector(".wrap").dataset.tab=b.dataset.tab;$("tin").classList.toggle("on",b.dataset.tab=="in");$("tout").classList.toggle("on",b.dataset.tab=="out");window.scrollTo(0,0)})});
+$("cv").onclick=function(){$("cvw").classList.toggle("z")};
+$("sh").onclick=function(){
+ if(lastErr&&!arm(this,"Problem found. Tap again to share anyway"))return;
+ cv.toBlob(function(b){
+  var f=new File([b],"Transporter_Cargo_"+(st.date||"report")+".png",{type:"image/png"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(function(){})}
+  else $("msg").textContent="Sharing is not available in this view. Use Download PNG, or press and hold the image to save it.";
+ },"image/png");
+};
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
+})();
+</script></body></html>
