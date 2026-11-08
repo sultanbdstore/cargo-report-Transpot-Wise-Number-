@@ -1,19 +1,21 @@
-# Export Program Report Maker
+# Transporter Cargo Report
 
-Enter the day's program, get the summary image. Paste a WhatsApp message to fill the form automatically, check it against the totals in the message, then download the summary as a PNG or copy the WhatsApp text version.
+Paste transporter messages and get a transporter-wise cargo chart image.
 
-Runs entirely in the browser. No server, no data leaves the device. Installable as an app (PWA).
-
-## Publish on GitHub Pages
-
-1. Create a new repository on GitHub and upload all files in this folder (keep the `icons` folder and the `.github` folder).
-2. Go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Push to `main`. The site goes live at `https://<your-username>.github.io/<repo-name>/`.
-
-Or without Actions: **Settings → Pages → Deploy from a branch → main / (root)**.
+Works in the browser and can be installed on a phone like an app. Nothing is sent to any server. Your entries stay in your own browser.
 
 ## Files
+- `index.html` the app
+- `manifest.webmanifest` app name, colors and icons
+- `sw.js` lets the app open without internet
+- `icons/logo-192.png`, `icons/logo-512.png`, `icons/logo-512-maskable.png`
 
-- `index.html` – the whole app
-- `manifest.webmanifest`, `sw.js` – install and offline support
-- `icons/` – favicon and app logos
+## Put it online with GitHub Pages
+1. On github.com press **New repository**, give it a name (for example `transporter-cargo-report`) and create it.
+2. Press **Add file > Upload files** and drag in **everything in this folder** (keep the `icons` folder). Press **Commit changes**.
+3. Open the repository **Settings > Pages**. Under **Build and deployment** choose **Deploy from a branch**, pick branch `main` and folder `/ (root)`, then **Save**.
+4. After about a minute the page shows your link: `https://YOUR-USERNAME.github.io/transporter-cargo-report/`
+5. Open that link in Chrome on your phone. Use the **Install app** button on the page, or Chrome menu (three dots) > **Add to Home screen / Install app**.
+
+## Updating later
+Upload the changed files to the repository, then change the version in `sw.js` (for example `transporter-cargo-v1` to `transporter-cargo-v2`) so phones pick up the new version.
