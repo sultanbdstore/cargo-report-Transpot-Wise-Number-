@@ -1,6 +1,6 @@
-/* Offline cache. Change CACHE (for example v2) whenever you upload new files. */
-const CACHE = "transporter-cargo-v1";
-const FILES = ["./", "index.html", "manifest.webmanifest", "icons/logo-192.png", "icons/logo-512.png", "icons/logo-512-maskable.png"];
+/* Offline cache. Change CACHE (for example v2 to v3) whenever you upload new files. */
+const CACHE = "transporter-cargo-v3";
+const FILES = ["./", "index.html", "manifest.webmanifest", "logo-192.png", "logo-512.png", "logo-192-maskable.png", "logo-512-maskable.png", "apple-touch-icon.png"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
 });

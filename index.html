@@ -4,8 +4,8 @@
 <meta name="theme-color" content="#0E2742">
 <meta name="description" content="Paste transporter messages and get a transporter-wise cargo chart image.">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/logo-192.png">
-<link rel="apple-touch-icon" href="icons/logo-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="logo-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Cargo Report">
@@ -82,6 +82,7 @@ button{min-height:40px}
  <div class="card"><h2>Basic details</h2><div class="g2">
   <div><label>Loading date</label><input type="date" data-b="date"></div><div></div>
   <div><label>From (origin)</label><input data-b="origin"></div><div><label>Default depot</label><input data-b="depot"></div></div>
+  <div style="margin-top:10px"><label>Factory address (shown on the image)</label><input data-b="address"></div>
   <div style="margin-top:10px"><label>Known depots (comma separated). A depot not in this list is flagged.</label><input data-b="depots"></div>
   <p class="hint">Each truck’s depot is read from its own message (for example AFL - SAPL), so one day can have several depots.</p></div>
  <div id="ts"></div>
@@ -93,9 +94,11 @@ button{min-height:40px}
 <script>
 (function(){
 var KEY="transporterReportV1";
-var EMPTY={date:"",origin:"AFL",depot:"KDS",ts:[],depots:["KDS","SAPL","SML","BM","INCONTRADE"]};
+var ADDR="Monipur, Bhabanipur, Gazipur Sadar, Gazipur – 1740";
+var EMPTY={date:"",origin:"AFL",depot:"KDS",address:ADDR,ts:[],depots:["KDS","SAPL","SML","BM","INCONTRADE"]};
 var st;try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!st||!st.ts)st=JSON.parse(JSON.stringify(EMPTY));
+if(!st.address)st.address=ADDR;
 if(!st.depots||!st.depots.length)st.depots=["KDS","SAPL","SML","BM","INCONTRADE"];
 function depList(v){return String(v||"").split(/[,\s]+/).map(function(x){return x.trim().toUpperCase()}).filter(Boolean)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
@@ -138,7 +141,7 @@ document.addEventListener("click",function(ev){
  save();renderForm();draw();
 });
 $("addt").onclick=function(){st.ts.push({name:"",exp:"",trucks:[]});save();renderForm();draw()};
-function resetAll(){st={date:"",origin:st.origin||"AFL",depot:st.depot||"KDS",ts:[],depots:st.depots};pw=[];aud=[];lastParsed="";renderAudit();$("paste").value="";$("pmsg").textContent="Cleared. Paste the new messages above and press Read pasted text.";$("msg").textContent="";save();renderForm();draw();$("paste").focus()}
+function resetAll(){st={date:"",origin:st.origin||"AFL",depot:st.depot||"KDS",address:st.address,ts:[],depots:st.depots};pw=[];aud=[];lastParsed="";renderAudit();$("paste").value="";$("pmsg").textContent="Cleared. Paste the new messages above and press Read pasted text.";$("msg").textContent="";save();renderForm();draw();$("paste").focus()}
 $("reset").onclick=function(){if(arm(this,"Tap again to clear all"))resetAll()};$("reset2").onclick=resetAll;
 
 /* ---------- parser ---------- */
@@ -320,6 +323,7 @@ function draw(){
  var sub=dn.length<=3?"From "+(st.origin||"-")+" to "+dn.join(", ")+(dn.length>1?" Depots":" Depot"):"From "+(st.origin||"-")+" to "+dn.length+" depots: "+dn.join(", ");
  tx(sub,50,88,fit(sub,980,30,800,16),AMB);
  tx("Loading date "+(st.date?fdate(st.date):"-")+"  |  "+C.all+" trucks from "+nT+" transporter"+(nT==1?"":"s"),50,128,fn(500,22),"#B9C7DA");
+ if(st.address){var ad="Factory: "+st.address;tx(ad,50,168,fit(ad,980,21,600,13),"#DCE6F7")}
  var K=[[C.all,"total trucks",AMB],[C.exp,"export trucks",BLUE],[C.loc,"local trucks",RED],[nT,"transporters",TEAL]],cw=(W-100-60)/4,kx=50;
  K.forEach(function(k){rr(kx,244,cw,100,20,WH);rr(kx,244,9,100,4.5,k[2]);tx(String(k[0]),kx+28,252,fn(900,50),INK);tx(k[1],kx+28,312,fn(600,19),MUT);kx+=cw+20});
  rr(50,y0,W-100,chartH,20,WH);tx("Trucks by transporter",74,y0+18,fn(800,24),INK);
